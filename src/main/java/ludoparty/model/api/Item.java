@@ -18,7 +18,7 @@ public enum Item {
     DADUPLO(
             ItemType.BONUS,
             "Daduplo",
-            "Al prossimo tiro di dado ne lancerai due",
+            "Per il prossimo tiro di dado in questo turno il risultato varrà doppio",
             150,
             1),
     /**
@@ -27,7 +27,7 @@ public enum Item {
     ABBONDANZA(
             ItemType.BONUS,
             "Abbondanza",
-            "I coin raccolti raddoppiano per questo turno",
+            "I ludollari raccolti in questo turno raddoppiano",
             250,
             2),
     /**
@@ -56,16 +56,7 @@ public enum Item {
             "Tagliatelo",
             "Il prossimo tiro di dado dell'avversario sara' dimezzato",
             300,
-            5),
-    /**
-     * Ariete.
-     */
-    ARIETE(
-            ItemType.MALUS,
-            "Ariete",
-            "Disattiva anticipatamente il bastione di un avversario",
-            600,
-            6);
+            5);
 
     private ItemType type;
     private String name;

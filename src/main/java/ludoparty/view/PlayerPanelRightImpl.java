@@ -4,6 +4,7 @@ import javafx.application.Platform;
 import javafx.scene.control.Label;
 import ludoparty.model.Position;
 import ludoparty.model.api.Game;
+import ludoparty.utils.Constants;
 import ludoparty.view.PlayerGroup.DiceImageView;
 
 /**
@@ -12,7 +13,7 @@ import ludoparty.view.PlayerGroup.DiceImageView;
 public final class PlayerPanelRightImpl extends AbstractPlayerPanel {
 
     private final PlayerGroup topPlayer;
-    @SuppressWarnings("all")
+    @SuppressWarnings("PMD")
     private PlayerGroup bottomPlayer;
 
     /**
@@ -25,7 +26,7 @@ public final class PlayerPanelRightImpl extends AbstractPlayerPanel {
         this.topPlayer = createTopPlayer(this.getTopPos(), game);
         this.getChildren().add(this.topPlayer);
 
-        if (this.getPlayersNumber() > 2) {
+        if (this.getPlayersNumber() > Constants.PLAYERS_NUM_2) {
             this.bottomPlayer = createBottomPlayer(this.getBottomPos(), game);
             this.getChildren().add(this.bottomPlayer);
         }
@@ -35,7 +36,7 @@ public final class PlayerPanelRightImpl extends AbstractPlayerPanel {
     public PlayerGroup createTopPlayer(final Position pos, final Game game) {
 
         String playerName = game.getPlayers().get(1).getName();
-        if (this.getPlayersNumber()  > 2) {
+        if (this.getPlayersNumber() > Constants.PLAYERS_NUM_2) {
             playerName = game.getPlayers().get(2).getName();
         }
 
@@ -46,8 +47,6 @@ public final class PlayerPanelRightImpl extends AbstractPlayerPanel {
             LABEL_COINS_TOP_Y_LAYOUT,
             DICE_TOP_Y_LAYOUT
         );
-
-        // TODO add another dice image when is used DADUPLO
 
         g.getChildren().addAll(
             g.getPlayerAvatar(), g.getPlayerAvatarInner(), g.getPlayerName(), g.getPlayerCoins(), g.getDiceImage());
@@ -93,7 +92,8 @@ public final class PlayerPanelRightImpl extends AbstractPlayerPanel {
     }
 
     @Override
-    public void refresh(final int coinsBottom, final int coinsTop, final int diceBottomNum, final int diceTopNum) {
+    public void refresh(final int coinsBottom, final int earnedCoins, final int coinsTop, final int diceBottomNum, 
+        final int diceTopNum) {
         Platform.runLater(new Runnable() {
             @Override
             public void run() {
@@ -101,7 +101,7 @@ public final class PlayerPanelRightImpl extends AbstractPlayerPanel {
                 if (diceTopNum > 0) {
                     getTopPlayerDice().updateDiceImage(diceTopNum);
                 }
-                if (getPlayersNumber() > 2) {
+                if (getPlayersNumber() > Constants.PLAYERS_NUM_2) {
                     getBottomPlayerCoins().setText("Ludollari: " + coinsBottom);
                     if (diceBottomNum > 0) {
                         getBottomPlayerDice().updateDiceImage(diceBottomNum);

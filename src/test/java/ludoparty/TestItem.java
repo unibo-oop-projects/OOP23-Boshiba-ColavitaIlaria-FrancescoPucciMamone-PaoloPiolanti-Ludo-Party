@@ -10,14 +10,14 @@ class TestItem {
 
     @Test void testDaduplo() {
         assertEquals("Daduplo", Item.DADUPLO.getName());
-        assertEquals("Al prossimo tiro di dado ne lancerai due", Item.DADUPLO.getDescription());
+        assertEquals("Per il prossimo tiro di dado in questo turno il risultato varrà doppio", Item.DADUPLO.getDescription());
         assertEquals(Index.HUNDREDFIFTY, Item.DADUPLO.getPrice());
         assertEquals(Index.ONE, Item.DADUPLO.getId());
     }
 
     @Test void testAbbondanza() {
         assertEquals("Abbondanza", Item.ABBONDANZA.getName());
-        assertEquals("I coin raccolti raddoppiano per questo turno", Item.ABBONDANZA.getDescription());
+        assertEquals("I ludollari raccolti in questo turno raddoppiano", Item.ABBONDANZA.getDescription());
         assertEquals(Index.TWOHUNDREDFIFTY, Item.ABBONDANZA.getPrice());
         assertEquals(Index.TWO, Item.ABBONDANZA.getId());
     }
@@ -43,12 +43,5 @@ class TestItem {
         assertEquals("Il prossimo tiro di dado dell'avversario sara' dimezzato", Item.TAGLIATELO.getDescription());
         assertEquals(Index.THREEHUNDRED, Item.TAGLIATELO.getPrice());
         assertEquals(Index.FIVE, Item.TAGLIATELO.getId());
-    }
-
-    @Test void testAriete() {
-        assertEquals("Ariete", Item.ARIETE.getName());
-        assertEquals("Disattiva anticipatamente il bastione di un avversario", Item.ARIETE.getDescription());
-        assertEquals(Index.SIXHUNDRED, Item.ARIETE.getPrice());
-        assertEquals(Index.SIX, Item.ARIETE.getId());
     }
 }

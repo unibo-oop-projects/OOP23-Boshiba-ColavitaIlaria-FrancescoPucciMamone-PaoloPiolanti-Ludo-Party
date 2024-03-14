@@ -57,12 +57,12 @@ public class ShopPane extends BottomPane {
     final void buttonSetting(final Button button, final Item item, final Controller ctrl, final BoardScene board) {
 
         button.setText(item.getName() + ". \nCosto: " + item.getPrice() + " ludollari.");
-        button.setTooltip(new Tooltip(item.getDescription() + "\n" + item.getType().name()));
         replaceItemButtonsMap(button, item);
 
         button.setOnMouseEntered(cursorHand -> {
             button.setCursor(Cursor.HAND);
-            board.getBorderPane().requestFocus();
+            button.setTooltip(new Tooltip(item.getDescription() + "\n" + item.getType().name()));
+            board.getContainer().requestFocus();
         });
 
         button.setOnMousePressed(e -> {
@@ -73,7 +73,7 @@ public class ShopPane extends BottomPane {
 
                 sellingItem(buttonpressed, itemChoose, ctrl, board);
             }
-            board.getBorderPane().requestFocus();
+            board.getContainer().requestFocus();
         });
     }
 
@@ -89,30 +89,22 @@ public class ShopPane extends BottomPane {
             final BoardScene board) {
 
         ctrl.sellingItemToPlayer(itemChoose);
+        final Label message = new Label(ctrl.getShopMessage());
         if (ctrl.isItemSelled()) {
-            final Label message = new Label(ctrl.getShopMessage());
             message.setBackground(new Background(new BackgroundFill(Color.GREEN, CornerRadii.EMPTY, Insets.EMPTY)));
-
-            setPopupMessage(message);
-            getPopupMessage().show(board.getWindow());
             final Item newItem = ctrl.getNewShopItem();
-
             setButtonPressed(buttonpressed);
             buttonSetting(buttonpressed, newItem, ctrl, board);
         } else {
-
-            final Label message = new Label(ctrl.getShopMessage());
             message.setBackground(new Background(new BackgroundFill(Color.RED, CornerRadii.EMPTY, Insets.EMPTY)));
-
-            setPopupMessage(message);
-            getPopupMessage().show(board.getWindow());
         }
+        getPopupMessage(message).show(board.getWindow()); 
     }
 
     /**
      * To able all the buttons of the shop when a pawn arrive on a the cell.
      */
-    public void ableShop() {
+    public void enableShop() {
         for (int i = 0; i < this.getButtons().size(); i++) {
             final Button button = getButtons().get(i);
             button.setDisable(false);

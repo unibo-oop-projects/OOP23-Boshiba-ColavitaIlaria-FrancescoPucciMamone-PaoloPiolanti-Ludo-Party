@@ -4,6 +4,8 @@ import javafx.geometry.Insets;
 import javafx.scene.Cursor;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.Border;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.BorderStroke;
@@ -44,15 +46,15 @@ public final class BoardScene extends Scene {
     private static final String BG_COLOR_CSS = "-fx-background-color: ";
     private static final String BG_RADIUS_CSS = "; -fx-border-color: #5A5858; -fx-border-width: 0.3px; "
             + "-fx-background-radius: 0";
+    private final Border border = new Border(new BorderStroke(
+            BColor.DARK_GREY.get(), BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(BORDER_WIDTH)));
 
-    private final Stage boardStage;
-    private final GridPane boardPanel;
-    private final BorderPane borderPane;
-
-    private final PlayerPanelLeftImpl leftPane;
-    private final PlayerPanelRightImpl rightPane;
-    private final InventoryPane inventoryPane;
-    private final ShopPane shopPane;
+    private BorderPane container;
+    private GridPane board;
+    private PlayerPanelLeftImpl leftPane;
+    private PlayerPanelRightImpl rightPane;
+    private InventoryPane inventoryPane;
+    private ShopPane shopPane;
 
     private final List<Circle> pawns = new ArrayList<>();
 
@@ -64,73 +66,64 @@ public final class BoardScene extends Scene {
      */
     public BoardScene(final Controller controller, final Stage stage) {
         super(new BorderPane());
-        this.boardStage = stage;
-        this.boardStage.setScene(this);
-        this.boardStage.setTitle("Board");
+        stage.setScene(this);
+        stage.setTitle("Board");
 
         // borderpane - container
-        borderPane = (BorderPane) this.getRoot();
-        borderPane.setMinSize(BOARD_PANEL_WIDTH, BOARD_PANEL_WIDTH);
-        borderPane.setPadding(new Insets(ViewUtility.INSET_OS));
-
-        final var border = new Border(new BorderStroke(
-            BColor.DARK_GREY.get(), BorderStrokeStyle.SOLID, CornerRadii.EMPTY, new BorderWidths(BORDER_WIDTH)));
-
+        createContainer();
         // gridpane - central panel
-        boardPanel = new GridPane();
         createBoard(controller);
         initPawns(controller);
-        boardPanel.setMinSize(BOARD_PANEL_WIDTH, BOARD_PANEL_WIDTH);
-        boardPanel.setBorder(border);
-        borderPane.setCenter(boardPanel);
-
         // lateral panels for the players
-        this.leftPane = new PlayerPanelLeftImpl(controller.getGame());
-        this.leftPane.setPrefWidth(PLAYER_PANEL_WIDTH);
-        borderPane.setLeft(leftPane);
-
-        this.rightPane = new PlayerPanelRightImpl(controller.getGame());
-        this.rightPane.setPrefWidth(PLAYER_PANEL_WIDTH);
-        borderPane.setRight(rightPane);
-
+        createPlayersPanels(controller);
         // bottom pane for Player Bonus/Malus and Shop
+        createBottomPanel(controller);
+        container.requestFocus();
+
+        this.setFill(Color.valueOf("0077b6"));
+
+        stage.show();
+        stage.setOnCloseRequest(e -> {
+            stage.close();
+            Runtime.getRuntime().exit(0);
+        });
+    }
+
+    private void createContainer() {
+        container = (BorderPane) this.getRoot();
+        container.setMinSize(BOARD_PANEL_WIDTH, BOARD_PANEL_WIDTH);
+        container.setPadding(new Insets(ViewUtility.INSET_OS));
+        container.setBackground(new Background(new BackgroundFill(Color.valueOf("#fdfcfc"), CornerRadii.EMPTY, Insets.EMPTY)));
+    }
+
+    private void createPlayersPanels(final Controller ctrl) {
+        this.leftPane = new PlayerPanelLeftImpl(ctrl.getGame());
+        this.leftPane.setPrefWidth(PLAYER_PANEL_WIDTH);
+        container.setLeft(leftPane);
+
+        this.rightPane = new PlayerPanelRightImpl(ctrl.getGame());
+        this.rightPane.setPrefWidth(PLAYER_PANEL_WIDTH);
+        container.setRight(rightPane);
+    }
+
+    private void createBottomPanel(final Controller ctrl) {
         this.inventoryPane = new InventoryPane();
-        this.shopPane = new ShopPane(controller, this);
+        this.shopPane = new ShopPane(ctrl, this);
         this.shopPane.disableShop();
         final BorderPane bottomPane = new BorderPane();
         bottomPane.setTop(inventoryPane);
         bottomPane.setBottom(shopPane);
         bottomPane.setPrefHeight(ViewUtility.BOARD_BOTTOM_HEIGHT);
         bottomPane.setBorder(border);
-        borderPane.setBottom(bottomPane);
-
-        borderPane.requestFocus();
-
-        this.setFill(Color.valueOf("0077b6"));
-
-        this.boardStage.show();
-        this.boardStage.setOnCloseRequest(e -> {
-            boardStage.close();
-        });
-
-        stage.setOnCloseRequest(e -> {
-            Runtime.getRuntime().exit(0);
-        });
-    }
-
-    /**
-     * Close the board stage and the game.
-     */
-    public void close() {
-        boardStage.close();
+        container.setBottom(bottomPane);
     }
 
     /**
      * Return the borderpane.
      * @return the borderpane
      */
-    public BorderPane getBorderPane() {
-        return borderPane;
+    public BorderPane getContainer() {
+        return container;
     }
 
     /**
@@ -181,6 +174,11 @@ public final class BoardScene extends Scene {
      */
     private void createBoard(final Controller ctrl) {
 
+        board = new GridPane();
+        board.setMinSize(BOARD_PANEL_WIDTH, BOARD_PANEL_WIDTH);
+        board.setBorder(border);
+        container.setCenter(board);
+
         for (int i = 0; i < Constants.CELLS_NUMBER; i++) {
             for (int j = 0; j < Constants.CELLS_NUMBER; j++) {
                 final Button bt = new Button(" ");
@@ -205,13 +203,13 @@ public final class BoardScene extends Scene {
                 } else if (ctrl.getGame().getBoard().getShops().contains(pos)) {
                     bt.setStyle(BG_COLOR_CSS + BColor.SHOP_GREY.getHexColor() + BG_RADIUS_CSS);
                     bt.setText("S");
-                    bt.setFont(new Font(Index.EIGHTEEN));
+                    bt.setFont(new Font(Index.FIFTEEN));
                 }
 
                 bt.setPrefSize(CELL_WIDTH, CELL_WIDTH);
                 bt.setCursor(Cursor.HAND);
 
-                this.boardPanel.add(bt, j, i);
+                this.board.add(bt, j, i);
             }
         }
     }
@@ -225,11 +223,11 @@ public final class BoardScene extends Scene {
 
         for (final Player player : controller.getGame().getPlayers()) {
             for (int i = 0; i < player.getPawns().size(); i++) {
-                final Position pos = player.getPawns().get(i).getStartPosition();
                 final Circle pawn = createPawn(player.getColor());
-                pawns.add(pawn);
+                this.pawns.add(pawn);
 
-                this.boardPanel.add(pawn, pos.getX(), pos.getY());
+                final Position pos = player.getPawns().get(i).getStartPosition();
+                this.board.add(pawn, pos.getX(), pos.getY());
             }
         }
     }
@@ -258,6 +256,10 @@ public final class BoardScene extends Scene {
         final Circle c = new Circle(PAWN_POSITION, PAWN_POSITION, CIRCLE_RADIUS, BColor.DARK_GREY.get());
         c.setStroke(newColor.get());
         c.setStrokeWidth(3.0);
+        if (color == BColor.BLUE) {
+            c.setOnMouseEntered(event -> c.setCursor(Cursor.HAND));
+        }
+
         return c;
     }
 

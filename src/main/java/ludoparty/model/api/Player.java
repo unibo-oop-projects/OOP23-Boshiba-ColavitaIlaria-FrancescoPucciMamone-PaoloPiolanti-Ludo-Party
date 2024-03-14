@@ -61,23 +61,23 @@ public interface Player {
     int getCoins();
 
     /**
-     * Returns the value of the dice thrown.
-     * 
-     * @return the value of the dice
+     * Rolls the dice.
      */
-    int rollDice();
+    void rollDice();
 
     /**
      * Gets the dice result.
+     * 
      * @return the dice result
      */
     int getDiceResult();
 
     /**
-     * Sets the dice result.
-     * @param result the dice result
+     * Gets the number of steps of the pawn.
+     * 
+     * @return the number of steps
      */
-    void setDiceResult(int result);
+    int getSteps();
 
     /**
      * Returns true if dice is rolled.
@@ -96,31 +96,28 @@ public interface Player {
     /**
      * Checks if it's the right moment to press ENTER.
      * 
+     * @param game the Game.
      * @return true if ENTER key is pressed when it's actually possible to change
      *         turn
      */
-    boolean canPassTurn();
-
-    /**
-     * Set the pawnMoved field.
-     * @param b the boolean value to set
-     */
-    void setPawnMoved(boolean b);
+    boolean canPassTurn(Game game);
 
     /**
      * Checks if the User can move the clicked Pawn.
+     * 
      * @param pawn the clicked Pawn.
+     * @param game the Game.
      * @return true if the clicked Pawn can be moved.
      */
-    boolean canMovePawn(Pawn pawn);
+    boolean canMovePawn(Pawn pawn, Game game);
 
     /**
      * Checks if the player can move one of its pawns.
      * 
-     * @param diceResult the dice result
+     * @param game the Game.
      * @return true if the player can move one of its pawns
      */
-    boolean canMovePawns(int diceResult);
+    boolean canMovePawns(Game game);
 
     /**
      * Modify the amount of coins.
@@ -131,9 +128,15 @@ public interface Player {
 
     /**
      * Earn coins based on the cells advanced in this turn.
-     * @param diceResult this turn's dice result
      */
-    void earnCoins(int diceResult);
+    void earnCoins();
+
+    /**
+     * Gets the amount of coins earned during last turn.
+     * 
+     * @return the amount of coins just earned
+     */
+    int getEarnedCoins();
 
     /**
      * Gets the player items.
@@ -172,6 +175,20 @@ public interface Player {
      * @param game   the game
      */
     void useItem(Item item, Player player, Pawn pawn, Game game);
+
+    /**
+     * Return True if the last malus selected is used, False instead.
+     * 
+     * @return if the last malus selected is used
+     */
+    boolean isMalusUsed();
+
+    /**
+     * Set the new value for the malusUsed.
+     * 
+     * @param value the new value
+     */
+    void setMalusUsed(boolean value);
 
     /**
      * Remove the {@link Item.ItemType#MALUS} on the player after it is expired.

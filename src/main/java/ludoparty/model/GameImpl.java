@@ -29,6 +29,8 @@ public final class GameImpl implements Game {
     private final Turn turn;
     private final Shop shop;
     private Result gameStatus;
+    private Integer[] pawnsNumber;
+    private int previousPawnsNumber;
 
     /**
      * Constructor.
@@ -43,14 +45,14 @@ public final class GameImpl implements Game {
         // add players
         this.humanPlayer = new PlayerImpl(playerName, PlayerType.HUMAN,
                 BColor.BLUE, CellType.BOTTOM_LEFT_HOUSE, board.getBottomLeftPawnsStartPos());
-        final Player p1 = new PlayerImpl("Player 2", PlayerType.COMPUTER,
+        final Player p1 = new PlayerImpl("Player2", PlayerType.COMPUTER,
                 BColor.GREEN, CellType.TOP_RIGHT_HOUSE, board.getTopRightPawnsStartPos());
         this.players = new ArrayList<>(List.of(this.humanPlayer, p1));
 
         if (playersNumber > players.size()) {
-            final Player p2 = new PlayerImpl("Player 3", PlayerType.COMPUTER,
+            final Player p2 = new PlayerImpl("Player3", PlayerType.COMPUTER,
                     BColor.RED, CellType.TOP_LEFT_HOUSE, board.getTopLeftPawnsStartPos());
-            final Player p3 = new PlayerImpl("Player 4", PlayerType.COMPUTER,
+            final Player p3 = new PlayerImpl("Player4", PlayerType.COMPUTER,
                     BColor.YELLOW, CellType.BOTTOM_RIGHT_HOUSE, board.getBottomRightPawnsStartPos());
             this.players.add(p2);
             this.players.add(p3);
@@ -60,6 +62,8 @@ public final class GameImpl implements Game {
         turn = new TurnImpl(this.humanPlayer);
         shop = new ShopImpl();
         this.gameStatus = Result.PLAY;
+        this.pawnsNumber = new Integer[getPlayers().size()]; // BLUE, RED [GREEN, YELLOW]
+        this.previousPawnsNumber = Constants.PLAYER_PAWNS - 1;
     }
 
     @Override
@@ -98,37 +102,44 @@ public final class GameImpl implements Game {
     }
 
     @Override
-    @SuppressWarnings("all")
     public Result getResult() {
+        if (isOver()) {
+            this.gameStatus = Result.WIN;
+        }
+        return this.gameStatus;
+    }
+
+    @Override
+    public boolean isOver() {
         // check if in cell (7,7) there are all pawns of any player
         final List<Pawn> pawns = this.getBoard().getEndCell().getPawns();
 
-        int[] pawnsNumber = new int[getPlayers().size()]; // BLUE, RED, GREEN, YELLOW
-        if (pawns.size() >= Constants.PLAYER_PAWNS) {
+        if (pawns.size() >= Constants.PLAYER_PAWNS && this.previousPawnsNumber <= pawns.size()) {
+            this.previousPawnsNumber = pawns.size();
+            // empty the array
+            for (int i = 0; i < this.pawnsNumber.length; i++) {
+                this.pawnsNumber[i] = 0;
+            }
+
             for (final var pawn : pawns) {
                 if (pawn.getColor() == BColor.BLUE) {
-                    pawnsNumber[0]++;
+                    this.pawnsNumber[0]++;
                 } else if (pawn.getColor() == BColor.GREEN) {
-                    pawnsNumber[1]++;
+                    this.pawnsNumber[1]++;
                 }
                 if (getPlayers().size() > Constants.PLAYERS_NUM_2) {
                     if (pawn.getColor() == BColor.RED) {
-                        pawnsNumber[2]++;
+                        this.pawnsNumber[2]++;
                     } else if (pawn.getColor() == BColor.YELLOW) {
-                        pawnsNumber[3]++;
+                        this.pawnsNumber[3]++;
                     }
                 }
             }
-
-            for (int i = 0; i < pawnsNumber.length; i++) {
-                if (pawnsNumber[i] == Constants.PLAYER_PAWNS) {
-                    this.gameStatus = Result.WIN;
-                    break;
-                }
+            if (List.of(pawnsNumber).stream().anyMatch(n -> n == Constants.PLAYER_PAWNS)) {
+                return true;
             }
         }
-
-        return this.gameStatus;
+        return false;
     }
 
     @Override

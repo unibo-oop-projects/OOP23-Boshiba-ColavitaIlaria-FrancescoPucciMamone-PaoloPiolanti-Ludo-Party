@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import ludoparty.model.api.Cell.CellType;
 import ludoparty.model.api.Dice;
 import ludoparty.model.api.Game;
@@ -20,21 +23,24 @@ import ludoparty.utils.Index;
  */
 public final class PlayerImpl implements Player {
 
+    private static final Logger LOGGER = LogManager.getRootLogger();
+
     private final String name;
     private final PlayerType type;
     private final BColor color;
     private final List<Pawn> pawns;
     private final Dice dice;
+    private int steps;
     private int diceResult;
     private boolean diceRolled;
     private boolean pawnMoved;
-    private boolean isfirstTurn = true;
+    private boolean malusUsed;
+    private boolean isfirstTurn;
     private int coins;
+    private int currentEarnAmount;
     // Item flags
     private final List<Item> playerItems = new ArrayList<>();
     private final List<Item> itemsApplied = new ArrayList<>();
-    private int firstDice;
-    private int secondDice;
     private final Random r = new Random();
 
     /**
@@ -52,13 +58,16 @@ public final class PlayerImpl implements Player {
         this.type = type;
         this.color = color;
         this.pawns = new ArrayList<>();
+        this.malusUsed = true;
 
         for (int i = 0; i < Constants.PLAYER_PAWNS; i++) {
             this.pawns.add(new PawnImpl(pawnsStartPos.get(i), playerHouse, color));
         }
 
         this.coins = 0;
+        this.currentEarnAmount = 0;
         this.dice = new DiceImpl();
+        this.isfirstTurn = true;
     }
 
     // getters
@@ -95,6 +104,7 @@ public final class PlayerImpl implements Player {
      */
     private void setCoins(final int coins) {
         this.coins = coins;
+        LOGGER.error("coins: " + coins);
     }
 
     private Dice getDice() {
@@ -102,33 +112,25 @@ public final class PlayerImpl implements Player {
     }
 
     @Override
-    public int rollDice() {
+    public void rollDice() {
+
         if (this.isfirstTurn) { // force 6 at start of game in order to move at least the first pawn
             this.diceResult = Index.SIX;
+            this.steps = this.diceResult;
             this.isfirstTurn = !this.isfirstTurn;
-
-            return this.diceResult;
+        } else {
+            this.diceResult = this.getDice().roll();
+            this.steps = this.diceResult;
+            // if (this.itemsApplied.contains(Item.DADUPLO) &&
+            // this.itemsApplied.contains(Item.TAGLIATELO)) {
+            if (this.itemsApplied.contains(Item.DADUPLO)) {
+                this.steps = this.diceResult * Index.TWO;
+            } else if (this.itemsApplied.contains(Item.TAGLIATELO)) {
+                this.steps = this.diceResult / Index.TWO;
+            }
         }
-        if (this.itemsApplied.contains(Item.DADUPLO) && this.itemsApplied.contains(Item.TAGLIATELO)) {
-            this.setFirstDice(this.getDice().roll() / 2);
-            this.setSecondDice(this.getDice().roll() / 2);
-            this.diceResult = getFirstDice() + getSecondDice();
 
-            return this.diceResult;
-        } else if (this.itemsApplied.contains(Item.DADUPLO)) {
-            this.setFirstDice(this.getDice().roll());
-            this.setSecondDice(this.getDice().roll());
-            this.diceResult = getFirstDice() + getSecondDice();
-
-            return this.diceResult;
-        } else if (this.itemsApplied.contains(Item.TAGLIATELO)) {
-            this.diceResult = this.getDice().roll() / 2;
-
-            return this.diceResult;
-        }
-        this.diceResult = this.getDice().roll();
-
-        return this.diceResult;
+        this.diceRolled = true;
     }
 
     @Override
@@ -137,8 +139,8 @@ public final class PlayerImpl implements Player {
     }
 
     @Override
-    public void setDiceResult(final int result) {
-        this.diceResult = result;
+    public int getSteps() {
+        return this.steps;
     }
 
     @Override
@@ -148,49 +150,37 @@ public final class PlayerImpl implements Player {
 
     @Override
     public boolean canRollDice() {
-        if (this.diceRolled) {
-            return false;
-        }
-        this.diceRolled = true;
-        return true;
+        return !this.diceRolled;
     }
 
     @Override
-    public boolean canPassTurn() {
-        if (!this.pawnMoved) {
+    public boolean canPassTurn(final Game game) {
+        if (!this.pawnMoved && canMovePawns(game)) {
             return false;
+        } else if (!isMalusUsed()) {
+            return false;
+        } else {
+            this.diceRolled = false;
+            this.pawnMoved = false;
+            return true;
         }
-        this.diceRolled = false;
-        this.pawnMoved = false;
-        return true;
     }
 
     @Override
-    public void setPawnMoved(final boolean b) {
-        this.pawnMoved = b;
-    }
-
-    @Override
-    public boolean canMovePawn(final Pawn pawn) {
-        if (!this.diceRolled || this.pawnMoved || pawn.getColor() != BColor.BLUE) {
-            return false;
-        }
-        /*
-         * Se è possibile muovere la pedina cliccata, imposto pawnMoved a true.
-         * Già verificata (in PlayerPanelLeft) la casistica in cui non è possibile
-         * muovere nessuna pedina.
-         */
-        if (pawn.canMove(this.diceResult)) {
+    public boolean canMovePawn(final Pawn pawn, final Game game) {
+        if (!this.diceRolled || this.pawnMoved || this.getType() != PlayerType.HUMAN) {
+            this.pawnMoved = false;
+        } else if (pawn.canMove(this.steps, game)) {
             this.pawnMoved = true;
         }
-        return true;
+        return this.pawnMoved;
     }
 
     @Override
-    public boolean canMovePawns(final int diceResult) {
+    public boolean canMovePawns(final Game game) {
         boolean canMove = false;
         for (final Pawn pawn : this.getPawns()) {
-            if (pawn.canMove(diceResult)) {
+            if (pawn.canMove(this.steps, game)) {
                 canMove = true;
                 break;
             }
@@ -205,11 +195,22 @@ public final class PlayerImpl implements Player {
     }
 
     @Override
-    public void earnCoins(final int diceResult) {
-        for (int i = 0; i < diceResult; i++) {
-            final int earnAmount = r.nextInt(Index.TWELVE) + Index.SIX; //ogni cella dà ludollari da 6 a 17
-            updateCoins(earnAmount);
+    public void earnCoins() {
+        currentEarnAmount = 0;
+        for (int i = 0; i < this.steps; i++) {
+            currentEarnAmount += r.nextInt(Index.TWELVE) + Index.SIX; // each cell contains from 6 to 17 ludollari
         }
+        LOGGER.error("earn amt totale: " + currentEarnAmount);
+        if (getItemsApplied().contains(Item.ABBONDANZA)) {
+            currentEarnAmount *= 2;
+            LOGGER.error("earn amt ABBONDANZA: " + currentEarnAmount);
+        }
+        updateCoins(currentEarnAmount);
+    }
+
+    @Override
+    public int getEarnedCoins() {
+        return this.currentEarnAmount;
     }
 
     @Override
@@ -244,73 +245,45 @@ public final class PlayerImpl implements Player {
             if (item.equals(Item.REGOLA_DEI_4)) {
                 pawn.move(-Index.FOUR, game);
             }
-        } else if (item.equals(Item.ARIETE)) {
-            player.getItemsApplied().remove(Item.BASTIONE);
-            player.addToItemsApplied(item);
-            if (item.equals(Item.REGOLA_DEI_4)) {
-                pawn.move(-Index.FOUR, game);
-            }
-        } 
+        }
+    }
+
+    @Override 
+    public boolean isMalusUsed() {
+        return this.malusUsed;
+    }
+
+    @Override
+    public void setMalusUsed(final boolean value) {
+        this.malusUsed = value;
     }
 
     @Override
     public void malusExpired() {
+        final List<Item> malus = new ArrayList<>();
         for (final Item i : itemsApplied) {
             if (i.getType().equals(Item.ItemType.MALUS)) {
-                itemsApplied.remove(i);
+                malus.add(i);
             }
         }
+        itemsApplied.removeAll(malus);
     }
 
     @Override
     public void bonusExpired() {
+        final List<Item> bonus = new ArrayList<>();
         for (final Item i : itemsApplied) {
             if (i.getType().equals(Item.ItemType.BONUS)) {
-                itemsApplied.remove(i);
+                bonus.add(i);
             }
         }
-    }
-
-    /**
-     * Sets the value of the first dice when {@link Item#DADUPLO} is activated.
-     * 
-     * @param diceResult the value of the first dice
-     */
-    private void setFirstDice(final int diceResult) {
-        this.firstDice = diceResult;
-    }
-
-    /**
-     * Sets the value of the second dice when {@link Item#DADUPLO} is activated.
-     * 
-     * @param diceResult the value of the second dice
-     */
-    private void setSecondDice(final int diceResult) {
-        this.secondDice = diceResult;
-    }
-
-    /**
-     * Gets the value of the first dice when {@link Item#DADUPLO} is activated.
-     * 
-     * @return the value of the first dice
-     */
-    private int getFirstDice() {
-        return this.firstDice;
-    }
-
-    /**
-     * Gets the value of the second dice when {@link Item#DADUPLO} is activated.
-     * 
-     * @return the value of the second dice
-     */
-    private int getSecondDice() {
-        return this.secondDice;
+        itemsApplied.removeAll(bonus);
     }
 
     @Override
     public String toString() {
-        return "PlayerImpl [name=" + name + ", type=" + type + ", color=" + color + ", pawns=" + pawns + ", diceResult="
-                + diceResult + ", coins=" + coins + ", playerItems=" + playerItems + "]";
+        return "PlayerImpl [name=" + name + ", type=" + type + ", color=" + color + ", steps=" + steps + ", diceResult="
+                + diceResult + ", coins=" + coins + ", currentEarnAmount=" + currentEarnAmount + "]";
     }
 
 }
